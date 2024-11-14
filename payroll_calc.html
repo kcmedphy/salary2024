@@ -1,0 +1,284 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAS Salary Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .calculator {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .employee-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .employee-item {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .buttons {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .add-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .remove-btn {
+            background-color: #f44336;
+            color: white;
+            padding: 5px 10px;
+        }
+        .clear-btn {
+            background-color: #ff9800;
+            color: white;
+        }
+        .add-btn:hover { background-color: #1976D2; }
+        .remove-btn:hover { background-color: #D32F2F; }
+        .clear-btn:hover { background-color: #f57c00; }
+        
+        .summary-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+            .form-group {
+                grid-template-columns: 1fr;
+            }
+            .summary-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h2>CAS Salary Calculator</h2>
+        
+        <div class="input-section">
+            <div class="form-group">
+                <div>
+                    <label>Grade:</label>
+                    <select id="grade">
+                        <option value="I">Grade I (48.3/hour)</option>
+                        <option value="SI">Grade SI (49.5/hour)</option>
+                        <option value="II">Grade II (58.8/hour)</option>
+                        <option value="III">Grade III (72.1/hour)</option>
+                        <option value="SIII">Grade SIII (78.4/hour)</option>
+                        <option value="IV">Grade IV (100.1/hour)</option>
+                        <option value="V">Grade V (112.1/hour)</option>
+                        <option value="SV">Grade SV (145.2/hour)</option>
+                        <option value="VI">Grade VI (179.5/hour)</option>
+                        <option value="SVI">Grade SVI (179.5/hour)</option>
+                        <option value="VII">Grade VII (201.3/hour)</option>
+                        <option value="SVII">Grade SVII (235.5/hour)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Number of People:</label>
+                    <input type="number" id="people" min="1" value="1">
+                </div>
+                <div>
+                    <label>Hours Worked:</label>
+                    <input type="number" id="hours" min="0" step="1" value="8">
+                </div>
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="ration">
+                        Include Ration Pay ($117)
+                    </label>
+                </div>
+            </div>
+            <div class="buttons">
+                <button class="add-btn" onclick="addGroup()">Add Employee Group</button>
+                <button class="clear-btn" onclick="clearAll()">Clear All</button>
+            </div>
+        </div>
+
+        <div class="employee-list" id="employee-list">
+            <!-- Employee groups will be listed here -->
+        </div>
+        
+        <div class="result-section">
+            <div id="calculation-details"></div>
+            <div class="summary-section">
+                <div>Total Payroll: $<span id="total-payroll">0.00</span></div>
+                <div>Total Man-Hours: <span id="total-manhours">0</span></div>
+                <div>Total Headcount: <span id="total-headcount">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const hourlyRates = {
+            'I': 48.3, 'SI': 49.5, 'II': 58.8, 'III': 72.1,
+            'SIII': 78.4, 'IV': 100.1, 'V': 112.1, 'SV': 145.2,
+            'VI': 179.5, 'SVI': 179.5, 'VII': 201.3, 'SVII': 235.5
+        };
+        
+        const rationRate = 117;
+        let groups = [];
+
+        function addGroup() {
+            const grade = document.getElementById('grade').value;
+            const people = parseInt(document.getElementById('people').value);
+            const hours = parseInt(document.getElementById('hours').value);
+            const includeRation = document.getElementById('ration').checked;
+            
+            if (isNaN(hours) || hours < 0) {
+                alert('Please enter a valid number of hours');
+                return;
+            }
+            
+            const group = {
+                id: Date.now(),
+                grade: grade,
+                people: people,
+                hours: hours,
+                includeRation: includeRation
+            };
+            
+            groups.push(group);
+            displayGroups();
+            calculateAll();
+            // Reset ration checkbox after adding group
+            document.getElementById('ration').checked = false;
+        }
+
+        function removeGroup(id) {
+            groups = groups.filter(group => group.id !== id);
+            displayGroups();
+            calculateAll();
+        }
+
+        function clearAll() {
+            groups = [];
+            displayGroups();
+            document.getElementById('calculation-details').innerHTML = '';
+            document.getElementById('total-payroll').textContent = '0.00';
+            document.getElementById('total-manhours').textContent = '0';
+            document.getElementById('total-headcount').textContent = '0';
+            document.getElementById('ration').checked = false;
+        }
+
+        function displayGroups() {
+            const container = document.getElementById('employee-list');
+            container.innerHTML = '';
+            
+            groups.forEach(group => {
+                const div = document.createElement('div');
+                div.className = 'employee-item';
+                div.innerHTML = `
+                    <div>Grade: ${group.grade}</div>
+                    <div>People: ${group.people}</div>
+                    <div>Hours: ${group.hours}</div>
+                    <div>Ration: ${group.includeRation ? 'Yes' : 'No'}</div>
+                    <button class="remove-btn" onclick="removeGroup(${group.id})">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function calculateAll() {
+            let totalPayroll = 0;
+            let totalManhours = 0;
+            let totalHeadcount = 0;
+            let details = '';
+            
+            groups.forEach(group => {
+                const hourlyRate = hourlyRates[group.grade];
+                const basicPay = hourlyRate * group.hours * group.people;
+                const rationPay = (group.hours >= 8 && group.includeRation) ? 
+                    rationRate * group.people : 0;
+                const groupTotal = basicPay + rationPay;
+                
+                totalManhours += group.hours * group.people;
+                totalHeadcount += group.people;
+                
+                details += `
+                    <div class="employee-item">
+                        <div>Grade ${group.grade} (${group.people} people)</div>
+                        <div>Basic Pay: $${basicPay.toFixed(2)}</div>
+                        <div>Ration Pay: $${rationPay.toFixed(2)}</div>
+                        <div>Group Total: $${groupTotal.toFixed(2)}</div>
+                    </div>
+                `;
+                
+                totalPayroll += groupTotal;
+            });
+            
+            document.getElementById('calculation-details').innerHTML = details;
+            document.getElementById('total-payroll').textContent = totalPayroll.toFixed(2);
+            document.getElementById('total-manhours').textContent = totalManhours;
+            document.getElementById('total-headcount').textContent = totalHeadcount;
+        }
+    </script>
+
+
+</body></html>
